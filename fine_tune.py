@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from dataset import Dataset
 from alexnet import AlexNet
 
-dataset = Dataset('res/data', AlexNet.SCALE_SIZE, mean_image=AlexNet.MEAN_IMAGE)
+dataset = Dataset('res/data', AlexNet.SCALE_SIZE, AlexNet.MEAN_IMAGE)
 images, labels = dataset.load()
 
 X_train, X_val, y_train, y_val = train_test_split(images, labels)

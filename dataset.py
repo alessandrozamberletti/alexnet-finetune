@@ -5,7 +5,7 @@ import sklearn.preprocessing
 
 
 class Dataset:
-    def __init__(self, path, scale, mean_image=None):
+    def __init__(self, path, scale, mean_image):
         self.path = path
         self.scale = scale
         self.mean_image = mean_image
