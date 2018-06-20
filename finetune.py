@@ -4,7 +4,8 @@ from alexnet import AlexNet
 import wget
 import os.path
 
-# load dataset from res/data, each subdirectory is a class
+
+# load dataset from ./res/data, each subdirectory is a class
 dataset = Dataset(os.path.join('res', 'data'), AlexNet.scale_size, mean_image=AlexNet.mean_image)
 
 # input placeholders
@@ -47,37 +48,35 @@ with tf.Session() as session:
 
     trainable_count = 0
     for epoch in range(100):
+        # unlock new layer weights and biases
+        if epoch % 1 == 0 and trainable_count * 2 < len(trainable_layers):
+            trainable_count += 1
+            print('layer: {0} now trainable'.format(trainable_layers[-2 * trainable_count].name.split('/')[0]))
+            train_op = optimizer.minimize(cost_op, var_list=trainable_layers[-2 * trainable_count:])
+            session.run(tf.variables_initializer(optimizer.variables()))
+
         # shuffle and randomly crop train dataset
         epoch_images, epoch_labels = dataset.get_augmented_epoch(AlexNet.crop_size, phase='train')
 
+        iteration = 0
         for chunk in range(0, len(epoch_images), AlexNet.batch_size):
-            # unlock new layer weights and biases
-            if epoch % 1 == 0 and trainable_count * 2 < len(trainable_layers):
-                trainable_count += 1
-                print('layer: {0} now trainable'.format(trainable_layers[-2 * trainable_count].name.split('/')[0]))
-                train_op = optimizer.minimize(cost_op, var_list=trainable_layers[-2 * trainable_count:])
-                session.run(tf.variables_initializer(optimizer.variables()))
-
             # fetch batch images and labels
             batch_images = epoch_images[chunk:chunk + AlexNet.batch_size]
             batch_labels = epoch_labels[chunk:chunk + AlexNet.batch_size]
 
-            # train
-            session.run(train_op, feed_dict={in_images: batch_images,
-                                             in_labels: batch_labels})
+            # evaluate train performance
+            feed = {in_images: batch_images, in_labels: batch_labels, batch_size: len(batch_labels)}
+            train_loss, train_oa, _ = session.run([cost_op, acc_op, train_op], feed_dict=feed)
 
-        # evaluate train performance
-        train_loss, train_oa = session.run([cost_op, acc_op], feed_dict={in_images: batch_images,
-                                                                         in_labels: batch_labels,
-                                                                         batch_size: len(batch_labels)})
+            # evaluate test performance
+            feed = {in_images: test_images, in_labels: test_labels, batch_size: len(test_labels)}
+            test_loss, test_oa = session.run([cost_op, acc_op], feed_dict=feed)
 
-        # evaluate test performance
-        test_loss, test_oa = session.run([cost_op, acc_op], feed_dict={in_images: test_images,
-                                                                       in_labels: test_labels,
-                                                                       batch_size: len(test_labels)})
+            print('Epoch: {0} '
+                  'Iteration: {1} '
+                  'Train_OA: {2:.2f} '
+                  'Test_OA: {3:.2f} '
+                  'TrainLoss: {4:.2f} '
+                  'TestLoss: {5:.2f}'.format(epoch, iteration, train_oa, test_oa, train_loss, test_loss))
 
-        print('Epoch: {0} '
-              'Train_OA: {1:.2f} '
-              'Test_OA: {2:.2f} '
-              'TrainLoss: {3:.2f} '
-              'TestLoss: {4:.2f}'.format(epoch, train_oa, test_oa, train_loss, test_loss))
+            iteration += 1

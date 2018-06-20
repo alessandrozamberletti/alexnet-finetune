@@ -2,7 +2,7 @@ from network import Network
 
 
 class AlexNet(Network):
-    batch_size = 24
+    batch_size = 500
     scale_size = 256
     crop_size = 227
     channels = 3
