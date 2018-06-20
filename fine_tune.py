@@ -15,4 +15,4 @@ if not os.path.exists(weights_file):
     wget.download('https://www.dropbox.com/s/ekgz9jtj1ybtxmj/alexnet_caffemodel.npy?dl=1', 'res')
 
 alex_net = AlexNet(dataset.num_classes, weights_file)
-alex_net.fit(X_train, X_val, y_train, y_val, freeze=True, epochs=1000, lr=0.0001, augment_data=True)
+alex_net.fit(X_train, X_val, y_train, y_val, freeze=True, epochs=1000, lr=0.0001, augment=True)

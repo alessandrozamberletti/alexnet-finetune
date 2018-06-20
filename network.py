@@ -30,9 +30,7 @@ def layer(op):
 
 
 class Network(object):
-    def __init__(self, inputs, num_classes, trainable=True):
-        # The number of classes
-        self.num_classes = num_classes
+    def __init__(self, inputs, trainable=True):
         # The input nodes for this network
         self.inputs = inputs
         # The current list of terminal nodes

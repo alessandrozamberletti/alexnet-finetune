@@ -4,15 +4,16 @@ import numpy as np
 from network import Network
 
 
-def augment(images, labels, crop_size, channels, random_crop=True):
+def process(images, labels, crop_size, channels, random_crop=True):
     assert len(images) == len(labels)
     shuffle = np.random.permutation(len(images))
-    images_placeholder = tf.placeholder(tf.float32, shape=images.shape)
+
+    images_ph = tf.placeholder(tf.float32, shape=images.shape)
     if random_crop:
-        fn = tf.map_fn(lambda image: tf.random_crop(image, [crop_size, crop_size, channels]), images_placeholder)
+        fn = tf.map_fn(lambda image: tf.random_crop(image, [crop_size, crop_size, channels]), images_ph)
     else:
-        fn = tf.map_fn(lambda image: tf.image.resize_images(image, [crop_size, crop_size]), images_placeholder)
-    feed = {images_placeholder: images[shuffle]}
+        fn = tf.map_fn(lambda image: tf.image.resize_images(image, [crop_size, crop_size]), images_ph)
+    feed = {images_ph: images[shuffle]}
     images = tf.Session().run(fn, feed_dict=feed)
 
     return np.array(images), np.array(labels[shuffle])
@@ -26,11 +27,12 @@ class AlexNet(Network):
     MEAN_IMAGE = [104., 117., 124.]
 
     def __init__(self, num_classes, weights):
+        self.num_classes = num_classes
         self.in_images_ph = tf.placeholder(tf.float32, [None, AlexNet.CROP_SIZE, AlexNet.CROP_SIZE, AlexNet.CHANNELS])
-        self.in_labels_ph = tf.placeholder(tf.float32, [None, num_classes])
+        self.in_labels_ph = tf.placeholder(tf.float32, [None, self.num_classes])
         self.weights = weights
 
-        super(AlexNet, self).__init__({'data': self.in_images_ph}, num_classes)
+        super(AlexNet, self).__init__({'data': self.in_images_ph}, self.num_classes)
 
     def setup(self):
         (self.feed('data')
@@ -60,15 +62,15 @@ class AlexNet(Network):
         net_out = tf.argmax(tf.nn.softmax(last_layer), 1)
         acc_op = tf.reduce_sum(tf.cast(tf.equal(net_out, tf.argmax(self.in_labels_ph, 1)), tf.float32))
         self.batch_size_ph = tf.placeholder(tf.float32)
-        self.acc_op = tf.divide(acc_op, self.batch_ph)
+        self.acc_op = tf.divide(acc_op, self.batch_size_ph)
 
         self.optimizer = tf.train.RMSPropOptimizer(lr)
 
-    def fit(self, x_train, x_val, y_train, y_val, freeze=True, epochs=100, augment_data=True, lr=0.001):
+    def fit(self, x_train, x_val, y_train, y_val, freeze=True, epochs=100, augment=True, lr=0.001):
         self.__define_ops(lr)
 
         # validation data
-        val_images, val_labels = augment(x_val, y_val, self.CROP_SIZE, self.CHANNELS, random_crop=False)
+        val_images, val_labels = process(x_val, y_val, self.CROP_SIZE, self.CHANNELS, random_crop=False)
 
         trainable_layers = tf.trainable_variables()
         if not freeze:
@@ -88,12 +90,13 @@ class AlexNet(Network):
                 # unlock new layers
                 if freeze and epoch % 10 == 0 and trainable_count * 2 < len(trainable_layers):
                     trainable_count += 1
-                    print('*** layer ({0}) is now trainable ***'.format(trainable_layers[-2 * trainable_count].name.split('/')[0]))
-                    train_op = self.optimizer.minimize(self.cost_op, var_list=trainable_layers[-2 * trainable_count:])
+                    layer_name = trainable_layers[-2 * trainable_count].name.split('/')[0]
+                    print('*** layer ({0}) is now trainable ***'.format(layer_name))
+                    train_op = self.optimizer.minimize(self.cost_op, var_list=trainable_layers[-2*trainable_count:])
                     session.run(tf.variables_initializer(self.optimizer.variables()))
 
                 # augment
-                epoch_images, epoch_labels = augment(x_train, y_train, self.CROP_SIZE, self.CHANNELS, random_crop=augment_data)
+                epoch_images, epoch_labels = process(x_train, y_train, self.CROP_SIZE, self.CHANNELS, random_crop=augment)
 
                 iteration = 0
                 for batch_start in range(0, len(epoch_images), AlexNet.BATCH_SIZE):
