@@ -66,8 +66,6 @@ class Network(object):
                     except ValueError:
                         if not ignore_missing:
                             raise
-                        else:
-                            print 'Skipping init of {} for layer {}'.format(param_name, op_name)
 
     def feed(self, *args):
         """Set the input(s) for the next operation by replacing the terminal nodes.
