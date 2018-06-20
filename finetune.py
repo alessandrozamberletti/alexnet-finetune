@@ -2,6 +2,8 @@ import tensorflow as tf
 import random
 from dataset import Dataset
 from alexnet import AlexNet
+import wget
+import os.path
 
 tf.set_random_seed(42)
 random.seed(42)
@@ -24,9 +26,13 @@ trainable_layers = tf.trainable_variables()
 test_im, test_lbl = dataset.get_augmented_epoch(AlexNet.crop_size, phase='test')
 optimizer = tf.train.RMSPropOptimizer(0.001)
 
+weights = 'alexnet_caffemodel.npy'
+if not os.path.exists(weights):
+    wget.download('https://www.dropbox.com/s/ekgz9jtj1ybtxmj/alexnet_caffemodel.npy?dl=1')
+
 with tf.Session() as session:
     session.run(tf.global_variables_initializer())
-    net.load('weights.npy', session, ignore_missing=True)
+    net.load(weights, session, ignore_missing=True)
 
     trainable_count = 0
     for i in range(1000):
