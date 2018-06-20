@@ -49,19 +49,23 @@ class AlexNet(Network):
          .fc(self.num_classes, relu=False, name='new')
          .softmax(name='prob'))
 
-    def fit(self, x_train, x_test, y_train, y_test, epochs=100, augment_data=True):
+    def __setup_operations(self, lr):
         # to fine-tune we replace IP layer with a new one
         last_layer = self.layers['new']
 
         # define cost, accuracy and train operations
-        cost_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=last_layer, labels=self.in_labels), 0)
+        cost_op = tf.nn.softmax_cross_entropy_with_logits_v2(logits=last_layer, labels=self.in_labels)
+        self.cost_op = tf.reduce_mean(cost_op, 0)
 
         net_out = tf.argmax(tf.nn.softmax(last_layer), 1)
         acc_op = tf.reduce_sum(tf.cast(tf.equal(net_out, tf.argmax(self.in_labels, 1)), tf.float32))
-        batch_size = tf.placeholder(tf.float32)
-        acc_op = tf.divide(acc_op, batch_size)
+        self.batch_size = tf.placeholder(tf.float32)
+        self.acc_op = tf.divide(acc_op, self.batch_size)
 
-        optimizer = tf.train.RMSPropOptimizer(0.001)
+        self.optimizer = tf.train.RMSPropOptimizer(lr)
+
+    def fit(self, x_train, x_test, y_train, y_test, epochs=100, augment_data=True, lr=0.001):
+        self.__setup_operations(lr)
 
         # retrieve test data
         test_images, test_labels = augment(x_test, y_test, self.crop_size, self.channels, augment_data)
@@ -76,12 +80,12 @@ class AlexNet(Network):
 
             trainable_count = 0
             for epoch in range(epochs):
-                # unlock new layer weights and biases
+                # unlock new layers
                 if epoch % 1 == 0 and trainable_count * 2 < len(trainable_layers):
                     trainable_count += 1
-                    print('layer: "{0}" now trainable'.format(trainable_layers[-2 * trainable_count].name.split('/')[0]))
-                    train_op = optimizer.minimize(cost_op, var_list=trainable_layers[-2 * trainable_count:])
-                    session.run(tf.variables_initializer(optimizer.variables()))
+                    print('"{0}" is now trainable'.format(trainable_layers[-2 * trainable_count].name.split('/')[0]))
+                    train_op = self.optimizer.minimize(self.cost_op, var_list=trainable_layers[-2 * trainable_count:])
+                    session.run(tf.variables_initializer(self.optimizer.variables()))
 
                 # augment train data
                 epoch_images, epoch_labels = augment(x_train, y_train, self.crop_size, self.channels, augment_data)
@@ -93,12 +97,16 @@ class AlexNet(Network):
                     batch_labels = epoch_labels[chunk:chunk + AlexNet.batch_size]
 
                     # evaluate train performance
-                    feed = {self.in_images: batch_images, self.in_labels: batch_labels, batch_size: len(batch_labels)}
-                    train_loss, train_oa, _ = session.run([cost_op, acc_op, train_op], feed_dict=feed)
+                    feed = {self.in_images: batch_images,
+                            self.in_labels: batch_labels,
+                            self.batch_size: len(batch_labels)}
+                    train_loss, train_oa, _ = session.run([self.cost_op, self.acc_op, train_op], feed_dict=feed)
 
                     # evaluate test performance
-                    feed = {self.in_images: test_images, self.in_labels: test_labels, batch_size: len(test_labels)}
-                    test_loss, test_oa = session.run([cost_op, acc_op], feed_dict=feed)
+                    feed = {self.in_images: test_images,
+                            self.in_labels: test_labels,
+                            self.batch_size: len(test_labels)}
+                    test_loss, test_oa = session.run([self.cost_op, self.acc_op], feed_dict=feed)
 
                     print('Epoch: {0} '
                           'Iteration: {1} '
