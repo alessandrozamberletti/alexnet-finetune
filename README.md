@@ -11,6 +11,6 @@ alex_net.fit(X_train, X_test, y_train, y_test, epochs=100, augment_data=True)
 ## Resources
 original caffemodel and prototxt: [https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet]
 
-caffemodel to tensorflow conversion project: [https://github.com/ethereon/caffe-tensorflow]
+caffemodel-tensorflow conversion project: [https://github.com/ethereon/caffe-tensorflow]
 
 evaluation dataset: [https://www.kaggle.com/c/dogs-vs-cats]
