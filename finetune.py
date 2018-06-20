@@ -4,7 +4,6 @@ from alexnet import AlexNet
 import wget
 import os.path
 
-
 # load dataset from ./res/data, each subdirectory is a class
 dataset = Dataset(os.path.join('res', 'data'), AlexNet.scale_size, mean_image=AlexNet.mean_image)
 
