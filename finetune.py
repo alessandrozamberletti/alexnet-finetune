@@ -32,8 +32,8 @@ test_images, test_labels = dataset.get_augmented_epoch(AlexNet.crop_size, phase=
 
 trainable_layers = tf.trainable_variables()
 
-# weights from [https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet]
-# converted with [https://github.com/ethereon/caffe-tensorflow]
+# weights: [https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet]
+# converter: [https://github.com/ethereon/caffe-tensorflow]
 weights = os.path.join('res', 'alexnet_caffemodel.npy')
 if not os.path.exists(weights):
     wget.download('https://www.dropbox.com/s/ekgz9jtj1ybtxmj/alexnet_caffemodel.npy?dl=1')
