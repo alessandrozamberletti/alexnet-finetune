@@ -19,18 +19,18 @@ def augment(images, labels, crop_size, channels, random_crop=True):
 
 
 class AlexNet(Network):
-    batch_size = 500
-    scale_size = 256
-    crop_size = 227
-    channels = 3
-    mean_image = [104., 117., 124.]
+    BATCH_SIZE = 500
+    SCALE_SIZE = 256
+    CROP_SIZE = 227
+    CHANNELS = 3
+    MEAN_IMAGE = [104., 117., 124.]
 
     def __init__(self, num_classes, weights):
-        self.in_images = tf.placeholder(tf.float32, [None, AlexNet.crop_size, AlexNet.crop_size, AlexNet.channels])
-        self.in_labels = tf.placeholder(tf.float32, [None, num_classes])
+        self.in_images_ph = tf.placeholder(tf.float32, [None, AlexNet.CROP_SIZE, AlexNet.CROP_SIZE, AlexNet.CHANNELS])
+        self.in_labels_ph = tf.placeholder(tf.float32, [None, num_classes])
         self.weights = weights
 
-        super(AlexNet, self).__init__({'data': self.in_images}, num_classes)
+        super(AlexNet, self).__init__({'data': self.in_images_ph}, num_classes)
 
     def setup(self):
         (self.feed('data')
@@ -49,28 +49,33 @@ class AlexNet(Network):
          .fc(self.num_classes, relu=False, name='new')
          .softmax(name='prob'))
 
-    def __setup_operations(self, lr):
-        # to fine-tune we replace IP layer with a new one
+    def __define_ops(self, lr):
+        # weights for last fc layer are ignored
         last_layer = self.layers['new']
 
         # define cost, accuracy and train operations
-        cost_op = tf.nn.softmax_cross_entropy_with_logits_v2(logits=last_layer, labels=self.in_labels)
+        cost_op = tf.nn.softmax_cross_entropy_with_logits_v2(logits=last_layer, labels=self.in_labels_ph)
         self.cost_op = tf.reduce_mean(cost_op, 0)
 
         net_out = tf.argmax(tf.nn.softmax(last_layer), 1)
-        acc_op = tf.reduce_sum(tf.cast(tf.equal(net_out, tf.argmax(self.in_labels, 1)), tf.float32))
-        self.batch_size = tf.placeholder(tf.float32)
-        self.acc_op = tf.divide(acc_op, self.batch_size)
+        acc_op = tf.reduce_sum(tf.cast(tf.equal(net_out, tf.argmax(self.in_labels_ph, 1)), tf.float32))
+        self.batch_size_ph = tf.placeholder(tf.float32)
+        self.acc_op = tf.divide(acc_op, self.batch_ph)
 
         self.optimizer = tf.train.RMSPropOptimizer(lr)
 
-    def fit(self, x_train, x_test, y_train, y_test, epochs=100, augment_data=True, lr=0.001):
-        self.__setup_operations(lr)
+    def fit(self, x_train, x_val, y_train, y_val, freeze=True, epochs=100, augment_data=True, lr=0.001):
+        self.__define_ops(lr)
 
-        # retrieve test data
-        test_images, test_labels = augment(x_test, y_test, self.crop_size, self.channels, augment_data)
+        # validation data
+        val_images, val_labels = augment(x_val, y_val, self.CROP_SIZE, self.CHANNELS, random_crop=False)
 
         trainable_layers = tf.trainable_variables()
+        if not freeze:
+            print('*** all layers will be trained ***')
+            train_op = self.optimizer.minimize(self.cost_op, var_list=trainable_layers)
+        else:
+            print('*** decremental fine-tuning will be performed ***')
 
         with tf.Session() as session:
             session.run(tf.global_variables_initializer())
@@ -81,38 +86,38 @@ class AlexNet(Network):
             trainable_count = 0
             for epoch in range(epochs):
                 # unlock new layers
-                if epoch % 1 == 0 and trainable_count * 2 < len(trainable_layers):
+                if freeze and epoch % 10 == 0 and trainable_count * 2 < len(trainable_layers):
                     trainable_count += 1
-                    print('"{0}" is now trainable'.format(trainable_layers[-2 * trainable_count].name.split('/')[0]))
+                    print('*** layer ({0}) is now trainable ***'.format(trainable_layers[-2 * trainable_count].name.split('/')[0]))
                     train_op = self.optimizer.minimize(self.cost_op, var_list=trainable_layers[-2 * trainable_count:])
                     session.run(tf.variables_initializer(self.optimizer.variables()))
 
-                # augment train data
-                epoch_images, epoch_labels = augment(x_train, y_train, self.crop_size, self.channels, augment_data)
+                # augment
+                epoch_images, epoch_labels = augment(x_train, y_train, self.CROP_SIZE, self.CHANNELS, random_crop=augment_data)
 
                 iteration = 0
-                for chunk in range(0, len(epoch_images), AlexNet.batch_size):
+                for batch_start in range(0, len(epoch_images), AlexNet.BATCH_SIZE):
                     # fetch batch images and labels
-                    batch_images = epoch_images[chunk:chunk + AlexNet.batch_size]
-                    batch_labels = epoch_labels[chunk:chunk + AlexNet.batch_size]
+                    batch_images = epoch_images[batch_start:batch_start+AlexNet.BATCH_SIZE]
+                    batch_labels = epoch_labels[batch_start:batch_start+AlexNet.BATCH_SIZE]
 
-                    # evaluate train performance
-                    feed = {self.in_images: batch_images,
-                            self.in_labels: batch_labels,
-                            self.batch_size: len(batch_labels)}
+                    # train performance
+                    feed = {self.in_images_ph: batch_images,
+                            self.in_labels_ph: batch_labels,
+                            self.batch_size_ph: len(batch_labels)}
                     train_loss, train_oa, _ = session.run([self.cost_op, self.acc_op, train_op], feed_dict=feed)
 
-                    # evaluate test performance
-                    feed = {self.in_images: test_images,
-                            self.in_labels: test_labels,
-                            self.batch_size: len(test_labels)}
-                    test_loss, test_oa = session.run([self.cost_op, self.acc_op], feed_dict=feed)
+                    # validation performance
+                    feed = {self.in_images_ph: val_images,
+                            self.in_labels_ph: val_labels,
+                            self.batch_size_ph: len(val_labels)}
+                    val_loss, val_oa = session.run([self.cost_op, self.acc_op], feed_dict=feed)
 
                     print('Epoch: {0} '
                           'Iteration: {1} '
                           'Train_OA: {2:.2f} '
-                          'Test_OA: {3:.2f} '
+                          'Val_OA: {3:.2f} '
                           'TrainLoss: {4:.2f} '
-                          'TestLoss: {5:.2f}'.format(epoch, iteration, train_oa, test_oa, train_loss, test_loss))
+                          'ValLoss: {5:.2f}'.format(epoch, iteration, train_oa, val_oa, train_loss, val_loss))
 
                     iteration += 1
