@@ -6,6 +6,7 @@ DEFAULT_PADDING = 'SAME'
 
 def layer(op):
     """Decorator for composable network layers."""
+
     def layer_decorated(self, *args, **kwargs):
         # Automatically set a name if not provided.
         name = kwargs.setdefault('name', self.get_unique_name(op.__name__))
@@ -29,7 +30,6 @@ def layer(op):
 
 
 class Network(object):
-
     def __init__(self, inputs, trainable=True):
         # The input nodes for this network
         self.inputs = inputs
@@ -49,7 +49,8 @@ class Network(object):
         """Construct the network. """
         raise NotImplementedError('Must be implemented by the subclass.')
 
-    def load(self, data_path, session, ignore_missing=False):
+    @staticmethod
+    def load(data_path, session, ignore_missing=False):
         """Load network weights.
         data_path: The path to the numpy-serialized network weights
         session: The current TensorFlow session
@@ -91,14 +92,15 @@ class Network(object):
         """Returns an index-suffixed unique name for the given prefix.
         This is used for auto-generating layer names based on the type-prefix.
         """
-        ident = sum(t.startswith(prefix) for t, _ in self.layers.items()) + 1
-        return '%s_%d' % (prefix, ident)
+        name = sum(t.startswith(prefix) for t, _ in self.layers.items()) + 1
+        return '%s_%d' % (prefix, name)
 
     def make_var(self, name, shape):
         """Creates a new TensorFlow variable."""
         return tf.get_variable(name, shape, trainable=self.trainable)
 
-    def validate_padding(self, padding):
+    @staticmethod
+    def validate_padding(padding):
         """Verifies that the padding is one of the supported ones."""
         assert padding in ('SAME', 'VALID')
 
@@ -189,7 +191,6 @@ class Network(object):
         with tf.variable_scope(name) as scope:
             input_shape = input.get_shape()
             if input_shape.ndims == 4:
-                # The input is spatial. Vectorize it first.
                 dim = 1
                 for d in input_shape[1:].as_list():
                     dim *= d
@@ -206,9 +207,6 @@ class Network(object):
     def softmax(self, input, name):
         input_shape = map(lambda v: v.value, input.get_shape())
         if len(input_shape) > 2:
-            # For certain models (like NiN), the singleton spatial dimensions
-            # need to be explicitly squeezed, since they're not broadcast-able
-            # in TensorFlow's NHWC ordering (unlike Caffe's NCHW).
             if input_shape[1] == 1 and input_shape[2] == 1:
                 input = tf.squeeze(input, squeeze_dims=[1, 2])
             else:
@@ -217,8 +215,7 @@ class Network(object):
 
     @layer
     def batch_normalization(self, input, name, scale_offset=True, relu=False):
-        # NOTE: Currently, only inference is supported
-        with tf.variable_scope(name) as scope:
+        with tf.variable_scope(name) as _:
             shape = [input.get_shape()[-1]]
             if scale_offset:
                 scale = self.make_var('scale', shape=shape)
@@ -231,8 +228,6 @@ class Network(object):
                 variance=self.make_var('variance', shape=shape),
                 offset=offset,
                 scale=scale,
-                # TODO: This is the default Caffe batch norm eps
-                # Get the actual eps from parameters
                 variance_epsilon=1e-5,
                 name=name)
             if relu:
