@@ -1,3 +1,4 @@
+from __future__ import division
 import tensorflow as tf
 import numpy as np
 
@@ -12,7 +13,8 @@ def process(images, labels, crop_size, channels, random_crop=True):
     if random_crop:
         fn = tf.map_fn(lambda image: tf.random_crop(image, [crop_size, crop_size, channels]), images_ph)
     else:
-        fn = tf.map_fn(lambda image: tf.image.resize_images(image, [crop_size, crop_size]), images_ph)
+        fn = tf.map_fn(lambda image: tf.image.central_crop(image, crop_size/images[0].shape[0]), images_ph)
+        fn = tf.image.resize_images(fn, [crop_size, crop_size], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     feed = {images_ph: images[shuffle]}
     images = tf.Session().run(fn, feed_dict=feed)
 
