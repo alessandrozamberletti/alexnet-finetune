@@ -9,13 +9,13 @@ alex_net.fit(X_train, X_val, y_train, y_val, freeze=True, epochs=1000, lr=0.0001
 ```
 
 ## Instructions
-Move your dataset under ```res/data/class_{0,..,K}/image_{0,..,N}.jpg``` and run:
+Move your dataset to ```res/data/class_{0,..,K}/image_{0,..,N}.jpg``` and run:
 ```console
 az@ubuntu:~$ python fine_tune.py
 ```
-if the converted AlexNet caffemodel (source: [BVLC](https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet)) 
-is not in ```res/``` folder, it will be downloaded from 
-[Dropbox](https://www.dropbox.com/s/ekgz9jtj1ybtxmj/alexnet_caffemodel.npy?dl=1).
+If the converted AlexNet caffemodel (source: [BVLC](https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet))
+is not in ```res/``` folder, it will be downloaded from
+[here](https://www.dropbox.com/s/ekgz9jtj1ybtxmj/alexnet_caffemodel.npy?dl=1).
 
 ## Dependencies
 ```console
@@ -29,6 +29,6 @@ az@ubuntu:~$ python -c 'import tensorflow as tf; print(tf.__version__)'
 ```
 
 ## Resources
-Original caffemodel and prototxt: [https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet]  
-Caffemodel-tensorflow conversion project: [https://github.com/ethereon/caffe-tensorflow]  
+Original caffemodel and prototxt: [https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet]\
+Caffe-tensorflow conversion project: [https://github.com/ethereon/caffe-tensorflow]\
 Evaluation dataset: [https://www.kaggle.com/c/dogs-vs-cats]
