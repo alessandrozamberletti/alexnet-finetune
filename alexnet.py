@@ -4,6 +4,8 @@ import numpy as np
 
 from network import Network
 
+import matplotlib.pyplot as plt
+
 
 def process(images, labels, crop_size, channels, random_crop=True):
     assert len(images) == len(labels)
@@ -12,11 +14,11 @@ def process(images, labels, crop_size, channels, random_crop=True):
     images_ph = tf.placeholder(tf.float32, shape=images.shape)
     if random_crop:
         fn = tf.map_fn(lambda image: tf.random_crop(image, [crop_size, crop_size, channels]), images_ph)
+        images = tf.Session().run(fn, feed_dict={images_ph: images[shuffle]})
     else:
-        fn = tf.map_fn(lambda image: tf.image.central_crop(image, crop_size/images[0].shape[0]), images_ph)
-        fn = tf.image.resize_images(fn, [crop_size, crop_size], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    feed = {images_ph: images[shuffle]}
-    images = tf.Session().run(fn, feed_dict=feed)
+        assert images.shape[1] == images.shape[2]
+        offset = int((images.shape[1] - crop_size)/2)
+        images = images[:, offset:images.shape[1]-offset-1, offset:images.shape[1]-offset-1, :]
 
     return np.array(images), np.array(labels[shuffle])
 
@@ -25,16 +27,16 @@ class AlexNet(Network):
     BATCH_SIZE = 500
     SCALE_SIZE = 256
     CROP_SIZE = 227
-    CHANNELS = 3
+    CHNS = 3
     MEAN_IMAGE = [104., 117., 124.]
 
     def __init__(self, num_classes, weights):
         self.num_classes = num_classes
-        self.in_images_ph = tf.placeholder(tf.float32, [None, AlexNet.CROP_SIZE, AlexNet.CROP_SIZE, AlexNet.CHANNELS])
+        self.in_images_ph = tf.placeholder(tf.float32, [None, AlexNet.CROP_SIZE, AlexNet.CROP_SIZE, AlexNet.CHNS])
         self.in_labels_ph = tf.placeholder(tf.float32, [None, self.num_classes])
         self.weights = weights
 
-        super(AlexNet, self).__init__({'data': self.in_images_ph}, self.num_classes)
+        super(AlexNet, self).__init__({'data': self.in_images_ph})
 
     def setup(self):
         (self.feed('data')
@@ -72,7 +74,7 @@ class AlexNet(Network):
         self.__define_ops(lr)
 
         # validation data
-        val_images, val_labels = process(x_val, y_val, self.CROP_SIZE, self.CHANNELS, random_crop=False)
+        val_images, val_labels = process(x_val, y_val, self.CROP_SIZE, self.CHNS, random_crop=False)
 
         trainable_layers = tf.trainable_variables()
         if not freeze:
@@ -82,6 +84,7 @@ class AlexNet(Network):
             print('*** decremental fine-tuning will be performed ***')
 
         with tf.Session() as session:
+
             session.run(tf.global_variables_initializer())
 
             # load weights, ignore weights for new layer
@@ -90,7 +93,7 @@ class AlexNet(Network):
             trainable_count = 0
             for epoch in range(epochs):
                 # unlock new layers
-                if freeze and epoch % 10 == 0 and trainable_count * 2 < len(trainable_layers):
+                if freeze and epoch % 100 == 0 and trainable_count * 2 < len(trainable_layers):
                     trainable_count += 1
                     layer_name = trainable_layers[-2 * trainable_count].name.split('/')[0]
                     print('*** layer ({0}) is now trainable ***'.format(layer_name))
@@ -98,7 +101,7 @@ class AlexNet(Network):
                     session.run(tf.variables_initializer(self.optimizer.variables()))
 
                 # augment
-                epoch_images, epoch_labels = process(x_train, y_train, self.CROP_SIZE, self.CHANNELS, random_crop=augment)
+                epoch_images, epoch_labels = process(x_train, y_train, self.CROP_SIZE, self.CHNS, random_crop=augment)
 
                 iteration = 0
                 for batch_start in range(0, len(epoch_images), AlexNet.BATCH_SIZE):
@@ -118,11 +121,16 @@ class AlexNet(Network):
                             self.batch_size_ph: len(val_labels)}
                     val_loss, val_oa = session.run([self.cost_op, self.acc_op], feed_dict=feed)
 
-                    print('Epoch: {0} '
-                          'Iteration: {1} '
-                          'Train_OA: {2:.2f} '
-                          'Val_OA: {3:.2f} '
-                          'TrainLoss: {4:.2f} '
-                          'ValLoss: {5:.2f}'.format(epoch, iteration, train_oa, val_oa, train_loss, val_loss))
+                    print('epoch: {0} '
+                          'iteration: {1} '
+                          'train_OA: {2:.2f} '
+                          'val_OA: {3:.2f} '
+                          'train_loss: {4:.2f} '
+                          'val_loss: {5:.2f}'.format(epoch, iteration, train_oa, val_oa, train_loss, val_loss))
+
+                    # for i in val_images:
+                    #     plt.cla
+                    #     plt.imshow(i[..., ::-1])
+                    #     plt.pause(1)
 
                     iteration += 1
