@@ -19,4 +19,4 @@ if not os.path.exists(weights_file):
 
 print('Fine-tuning AlexNet')
 alex_net = AlexNet(labels.shape[1], weights_file)
-alex_net.fit(X_train, X_val, y_train, y_val, freeze=True, epochs=1000, lr=0.01, augment=True)
+alex_net.fit(X_train, X_val, y_train, y_val, freeze=True, epochs=1000, lr=0.0001, augment=True)

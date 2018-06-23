@@ -60,13 +60,15 @@ class Dataset:
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             sess.run(tf.local_variables_initializer())
+
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+
             num_samples = sess.run(files_num)
             for _ in range(num_samples):
-                image, label = loading_queue.dequeue()
-                self.images.append(image.eval())
-                self.labels.append(label.eval())
+                image, label = sess.run(loading_queue.dequeue())
+                self.images.append(image)
+                self.labels.append(label)
 
             coord.request_stop()
             coord.join(threads)

@@ -30,7 +30,7 @@ class AlexNet(Network):
 
     def __init__(self, num_classes, weights):
         self.num_classes = num_classes
-        self.in_images_ph = tf.placeholder(tf.float32, [None, AlexNet.CROP_SIZE, AlexNet.CROP_SIZE, AlexNet.CHNS])
+        self.in_images_ph = tf.placeholder(tf.float32, [None, self.CROP_SIZE, self.CROP_SIZE, self.CHNS])
         self.in_labels_ph = tf.placeholder(tf.float32, [None, self.num_classes])
         self.weights = weights
 
@@ -93,8 +93,7 @@ class AlexNet(Network):
                 # unlock new layers
                 if freeze and epoch % 100 == 0 and trainable_count * 2 < len(trainable_layers):
                     trainable_count += 1
-                    layer_name = trainable_layers[-2 * trainable_count].name.split('/')[0]
-                    print('*** layer ({0}) is now trainable ***'.format(layer_name))
+                    print('*** {0} trainable layers ***'.format(trainable_count))
                     train_op = self.optimizer.minimize(self.cost_op, var_list=trainable_layers[-2*trainable_count:])
                     session.run(tf.variables_initializer(self.optimizer.variables()))
 
