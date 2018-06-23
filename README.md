@@ -10,7 +10,7 @@ alex_net.fit(X_train, X_val, y_train, y_val, freeze=True, epochs=1000, lr=0.001)
 
 ## Instructions
 Use the following dataset structure: ```res/data/class_{0,..,K}/image_{0,..,N}.jpg```\
-Run:\
+Run:
 ```console
 az@ubuntu:~$ python fine_tune.py
 ```
