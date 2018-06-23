@@ -5,11 +5,12 @@ images, labels = dataset.load()
 X_train, X_val, y_train, y_val = train_val_split(images, labels)
 
 alex_net = AlexNet(dataset.num_classes, 'res/alexnet_caffemodel.npy')
-alex_net.fit(X_train, X_val, y_train, y_val, freeze=True, epochs=1000, lr=0.0001, augment=True)
+alex_net.fit(X_train, X_val, y_train, y_val, freeze=True, epochs=1000, lr=0.001)
 ```
 
 ## Instructions
-Move your dataset to ```res/data/class_{0,..,K}/image_{0,..,N}.jpg``` and run:
+Use the following dataset structure: ```res/data/class_{0,..,K}/image_{0,..,N}.jpg```\
+Run:\
 ```console
 az@ubuntu:~$ python fine_tune.py
 ```

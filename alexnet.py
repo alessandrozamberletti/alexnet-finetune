@@ -5,20 +5,21 @@ import numpy as np
 from network import Network
 
 
-def process(images, labels, crop_size, channels, random_crop=True):
+def process(images, labels, crop_size, channels, train=True):
     assert len(images) == len(labels)
-    shuffle = np.random.permutation(len(images))
+    assert images.shape[1] == images.shape[2]
 
-    images_ph = tf.placeholder(tf.float32, shape=images.shape)
-    if random_crop:
+    if train:
+        shuffle = np.random.permutation(len(images))
+        images_ph = tf.placeholder(tf.uint8, shape=images.shape)
         fn = tf.map_fn(lambda image: tf.random_crop(image, [crop_size, crop_size, channels]), images_ph)
         images = tf.Session().run(fn, feed_dict={images_ph: images[shuffle]})
+        labels = labels[shuffle]
     else:
-        assert images.shape[1] == images.shape[2]
         offset = int((images.shape[1] - crop_size)/2)
         images = images[:, offset:images.shape[1]-offset-1, offset:images.shape[1]-offset-1, :]
 
-    return np.array(images), np.array(labels[shuffle])
+    return np.array(images), np.array(labels)
 
 
 class AlexNet(Network):
@@ -68,11 +69,11 @@ class AlexNet(Network):
 
         self.optimizer = tf.train.RMSPropOptimizer(lr)
 
-    def fit(self, x_train, x_val, y_train, y_val, freeze=True, epochs=100, augment=True, lr=0.001):
+    def fit(self, x_train, x_val, y_train, y_val, freeze=True, epochs=100, lr=0.001):
         self.__define_ops(lr)
 
         # validation data
-        val_images, val_labels = process(x_val, y_val, self.CROP_SIZE, self.CHNS, random_crop=False)
+        val_images, val_labels = process(x_val, y_val, self.CROP_SIZE, self.CHNS, train=False)
 
         trainable_layers = tf.trainable_variables()
         if not freeze:
@@ -98,7 +99,7 @@ class AlexNet(Network):
                     session.run(tf.variables_initializer(self.optimizer.variables()))
 
                 # augment
-                epoch_images, epoch_labels = process(x_train, y_train, self.CROP_SIZE, self.CHNS, random_crop=augment)
+                epoch_images, epoch_labels = process(x_train, y_train, self.CROP_SIZE, self.CHNS, train=True)
 
                 iteration = 0
                 for batch_start in range(0, len(epoch_images), AlexNet.BATCH_SIZE):
