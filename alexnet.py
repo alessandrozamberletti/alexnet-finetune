@@ -4,8 +4,6 @@ import numpy as np
 
 from network import Network
 
-import matplotlib.pyplot as plt
-
 
 def process(images, labels, crop_size, channels, random_crop=True):
     assert len(images) == len(labels)
@@ -28,7 +26,7 @@ class AlexNet(Network):
     SCALE_SIZE = 256
     CROP_SIZE = 227
     CHNS = 3
-    MEAN_IMAGE = [104., 117., 124.]
+    MEAN_IMAGE = [104, 117, 124]
 
     def __init__(self, num_classes, weights):
         self.num_classes = num_classes
@@ -127,10 +125,5 @@ class AlexNet(Network):
                           'val_OA: {3:.2f} '
                           'train_loss: {4:.2f} '
                           'val_loss: {5:.2f}'.format(epoch, iteration, train_oa, val_oa, train_loss, val_loss))
-
-                    # for i in val_images:
-                    #     plt.cla
-                    #     plt.imshow(i[..., ::-1])
-                    #     plt.pause(1)
 
                     iteration += 1
