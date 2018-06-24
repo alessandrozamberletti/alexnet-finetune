@@ -1,15 +1,12 @@
 # caffe-tensorflow-alexnet
 ```python
-dataset = Dataset('res/data', AlexNet.scale_size, mean_image=AlexNet.mean_image)
-images, labels = dataset.load()
-X_train, X_val, y_train, y_val = train_val_split(images, labels)
-
 alex_net = AlexNet(dataset.num_classes, 'res/alexnet_caffemodel.npy')
 alex_net.fit(X_train, X_val, y_train, y_val, freeze=True, epochs=1000, lr=0.001)
 ```
+when ```freeze=True``` all but the last pre-trained layer are copied and frozen.
 
 ## Instructions
-Use the following dataset structure: ```res/data/class_{0,..,K}/image_{0,..,N}.jpg```\
+Use the following dataset structure: ```data/class_{0,..,K}/image_{0,..,N}.jpg```.  
 Run:
 ```console
 az@ubuntu:~$ python fine_tune.py
@@ -30,6 +27,6 @@ az@ubuntu:~$ python -c 'import tensorflow as tf; print(tf.__version__)'
 ```
 
 ## Resources
-Original caffemodel and prototxt: [https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet]\
-Caffe-tensorflow conversion project: [https://github.com/ethereon/caffe-tensorflow]\
+Original caffemodel and prototxt: [https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet]  
+Caffe-tensorflow conversion project: [https://github.com/ethereon/caffe-tensorflow]  
 Evaluation dataset: [https://www.kaggle.com/c/dogs-vs-cats]
