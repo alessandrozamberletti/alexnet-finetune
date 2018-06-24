@@ -1,8 +1,8 @@
 # alexnet-fine-tuning
 
 Layer-wise AlexNet fine-tuning.
-https://github.com/alessandrozamberletti/alexnet-fine-tuning/blob/master/res/alexnet-fine-tune.gif
-![AlexNet_fine-tuning]()
+
+![AlexNet_fine-tuning](https://github.com/alessandrozamberletti/alexnet-fine-tuning/blob/master/res/alexnet-fine-tune.gif)
 
 ```python
 alex_net = AlexNet(dataset.num_classes, 'res/alexnet_caffemodel.npy')
