@@ -1,6 +1,7 @@
 from __future__ import division
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 
 from network import Network
 
@@ -69,7 +70,10 @@ class AlexNet(Network):
 
         self.optimizer = tf.train.RMSPropOptimizer(lr)
 
-    def fit(self, x_train, x_val, y_train, y_val, freeze=True, epochs=100, lr=0.001):
+    def fit(self, x_train, x_val, y_train, y_val, freeze=True, epochs=100, lr=0.001, info=True):
+        if info:
+            plt.ion()
+
         self.__define_ops(lr)
 
         # validation data
@@ -77,10 +81,10 @@ class AlexNet(Network):
 
         trainable_layers = tf.trainable_variables()
         if not freeze:
-            print('*** all layers will be trained ***')
+            print('*** all layers are trainable ***')
             train_op = self.optimizer.minimize(self.cost_op, var_list=trainable_layers)
         else:
-            print('*** decremental fine-tuning will be performed ***')
+            print('*** layer-wise ***')
 
         with tf.Session() as session:
 
@@ -89,6 +93,8 @@ class AlexNet(Network):
             # load weights, ignore weights for new layer
             self.load(self.weights, session, ignore_missing=True)
 
+            train_oas = []
+            val_oas = []
             trainable_count = 0
             for epoch in range(epochs):
                 # unlock new layers
@@ -127,3 +133,18 @@ class AlexNet(Network):
                           'val_loss: {5:.2f}'.format(epoch, iteration, train_oa, val_oa, train_loss, val_loss))
 
                     iteration += 1
+
+                    if info:
+                        train_oas.append(train_oa)
+                        val_oas.append(val_oa)
+
+                        plt.cla()
+
+                        plt.title('Train Statistics')
+                        plt.xlabel('Iteration')
+                        plt.ylabel('Overall Accuracy')
+
+                        plt.plot(train_oas, label='train')
+                        plt.plot(val_oas, label='validation')
+                        plt.legend(loc='lower right')
+                        plt.pause(.0001)
