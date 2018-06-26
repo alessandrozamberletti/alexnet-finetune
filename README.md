@@ -1,14 +1,14 @@
-# alexnet-fine-tuning
+# AlexNet-fine_tune
 
 Layer-wise AlexNet fine-tuning.
 
-![AlexNet_fine-tuning](https://github.com/alessandrozamberletti/alexnet-fine-tuning/blob/master/res/alexnet-fine-tune.gif)
+![AlexNet-fine_tune](https://github.com/alessandrozamberletti/alexnet-fine_tune/blob/master/res/alexnet-fine_tune.gif)
 
 ```python
-alex_net = AlexNet(dataset.num_classes, 'res/alexnet_caffemodel.npy')
+alex_net = AlexNet(dataset.num_classes, 'res/alexnet-caffemodel.npy')
 alex_net.fit(X_train, X_val, y_train, y_val, freeze=True, epochs=1000, lr=0.001)
 ```
-when ```freeze=True```  layer-wise fine-tuning is performed (see: [1](https://ieeexplore.ieee.org/abstract/document/7426826/), [2](https://github.com/duggalrahul/AlexNet-Experiments-Keras)).
+when ```freeze=True``` layer-wise fine-tuning is performed (see: [1](https://ieeexplore.ieee.org/abstract/document/7426826/), [2](https://github.com/duggalrahul/AlexNet-Experiments-Keras)).
 
 ## Instructions
 Use the following dataset structure: ```data/class_{0,..,K}/image_{0,..,N}.jpg```.  
@@ -16,9 +16,9 @@ Run:
 ```console
 az@ubuntu:~$ python fine_tune.py
 ```
-If the converted (see: [here](https://github.com/ethereon/caffe-tensorflow)) AlexNet caffemodel (source: [BVLC](https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet))
+If the converted (source: [caffe-tensorflow](https://github.com/ethereon/caffe-tensorflow)) caffemodel (source: [BVLC](https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet))
 is not in ```res/``` folder, it will be downloaded from
-[here](https://www.dropbox.com/s/ekgz9jtj1ybtxmj/alexnet_caffemodel.npy?dl=1).
+[here](https://www.dropbox.com/s/ekgz9jtj1ybtxmj/alexnet-caffemodel.npy?dl=1).
 
 ## Dependencies
 ```console
