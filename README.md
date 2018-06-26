@@ -17,7 +17,7 @@ Run:
 az@ubuntu:~$ python fine_tune.py
 ```
 If the converted (source: [caffe-tensorflow](https://github.com/ethereon/caffe-tensorflow)) caffemodel (source: [BVLC](https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet))
-is not in ```res/``` folder, it will be downloaded from
+is not in ```res/```, it will be downloaded from
 [here](https://www.dropbox.com/s/ekgz9jtj1ybtxmj/alexnet-caffemodel.npy?dl=1).
 
 ## Dependencies
