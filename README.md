@@ -14,7 +14,7 @@ when ```freeze=True``` layer-wise fine-tuning is performed (see: [1](https://iee
 Use the following dataset structure: ```data/class_{0,..,K}/image_{0,..,N}.jpg```.  
 Run:
 ```console
-az@ubuntu:~$ python fine_tune.py
+$ python fine_tune.py
 ```
 If the converted (source: [caffe-tensorflow](https://github.com/ethereon/caffe-tensorflow)) caffemodel (source: [BVLC](https://github.com/BVLC/caffe/tree/master/models/bvlc_alexnet))
 is not in ```res/```, it will be downloaded from
@@ -22,12 +22,12 @@ is not in ```res/```, it will be downloaded from
 
 ## Dependencies
 ```console
-az@ubuntu:~$ python -V
+$ python -V
 Python 2.7.10
 ```
 
 ```console
-az@ubuntu:~$ python -c 'import tensorflow as tf; print(tf.__version__)'
+$ python -c 'import tensorflow as tf; print(tf.__version__)'
 1.8.0
 ```
 
